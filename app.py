@@ -44,59 +44,59 @@ config.model.params.img_H = IMG_H
 config.model.params.img_W = IMG_W
 params = config.model.params
 
-model = create_model(config_path=None, config=config)
-model.load_state_dict(torch.load("./checkpoints/eternal_1024.ckpt", map_location="cpu")["state_dict"])
-model = model.cuda()
-model.eval()
-sampler = PLMSSampler(model)
+# model = create_model(config_path=None, config=config)
+# model.load_state_dict(torch.load("./checkpoints/eternal_1024.ckpt", map_location="cpu")["state_dict"])
+# model = model.cuda()
+# model.eval()
+# sampler = PLMSSampler(model)
 
 model2 = create_model(config_path=None, config=config)
 model2.load_state_dict(torch.load("./checkpoints/VITONHD_1024.ckpt", map_location="cpu")["state_dict"])
-model2 = model.cuda()
+model2 = model2.cuda()
 model2.eval()
 sampler2 = PLMSSampler(model2)
 # #### model init <<<<
 
-@spaces.GPU
-@torch.autocast("cuda")
-@torch.no_grad()
-def stable_viton_model_hd(
-        batch,
-        n_steps,
-):
-    z, cond = model.get_input(batch, params.first_stage_key)
-    z = z
-    bs = z.shape[0]
-    c_crossattn = cond["c_crossattn"][0][:bs]
-    if c_crossattn.ndim == 4:
-        c_crossattn = model.get_learned_conditioning(c_crossattn)
-        cond["c_crossattn"] = [c_crossattn]
-    uc_cross = model.get_unconditional_conditioning(bs)
-    uc_full = {"c_concat": cond["c_concat"], "c_crossattn": [uc_cross]}
-    uc_full["first_stage_cond"] = cond["first_stage_cond"]
-    for k, v in batch.items():
-        if isinstance(v, torch.Tensor):
-            batch[k] = v.cuda()
-    sampler.model.batch = batch
+# @spaces.GPU
+# @torch.autocast("cuda")
+# @torch.no_grad()
+# def stable_viton_model_hd(
+#         batch,
+#         n_steps,
+# ):
+#     z, cond = model.get_input(batch, params.first_stage_key)
+#     z = z
+#     bs = z.shape[0]
+#     c_crossattn = cond["c_crossattn"][0][:bs]
+#     if c_crossattn.ndim == 4:
+#         c_crossattn = model.get_learned_conditioning(c_crossattn)
+#         cond["c_crossattn"] = [c_crossattn]
+#     uc_cross = model.get_unconditional_conditioning(bs)
+#     uc_full = {"c_concat": cond["c_concat"], "c_crossattn": [uc_cross]}
+#     uc_full["first_stage_cond"] = cond["first_stage_cond"]
+#     for k, v in batch.items():
+#         if isinstance(v, torch.Tensor):
+#             batch[k] = v.cuda()
+#     sampler.model.batch = batch
 
-    ts = torch.full((1,), 999, device=z.device, dtype=torch.long)
-    start_code = model.q_sample(z, ts)
-    torch.cuda.empty_cache()
-    output, _, _ = sampler.sample(
-        n_steps,
-        bs,
-        (4, IMG_H//8, IMG_W//8),
-        cond,
-        x_T=start_code, 
-        verbose=False,
-        eta=0.0,
-        unconditional_conditioning=uc_full,       
-    )
+#     ts = torch.full((1,), 999, device=z.device, dtype=torch.long)
+#     start_code = model.q_sample(z, ts)
+#     torch.cuda.empty_cache()
+#     output, _, _ = sampler.sample(
+#         n_steps,
+#         bs,
+#         (4, IMG_H//8, IMG_W//8),
+#         cond,
+#         x_T=start_code, 
+#         verbose=False,
+#         eta=0.0,
+#         unconditional_conditioning=uc_full,       
+#     )
 
-    output = model.decode_first_stage(output)
-    output = tensor2img(output)
-    pil_output = Image.fromarray(output)
-    return pil_output
+#     output = model.decode_first_stage(output)
+#     output = tensor2img(output)
+#     pil_output = Image.fromarray(output)
+#     return pil_output
 
 @spaces.GPU
 @torch.autocast("cuda")
@@ -184,17 +184,17 @@ def process_hd(vton_img, garm_img, n_steps, is_custom):
         IMG_W
     )
     
-    if is_custom:
-        sample = stable_viton_model_hd(
-            batch,
-            n_steps,
-        )
-    else:
-        sample = stable_viton_model_hd2(
-            batch,
-            n_steps,
-        )
-    return sample
+    # if is_custom:
+    #     sample = stable_viton_model_hd(
+    #         batch,
+    #         n_steps,
+    #     )
+    # else:
+    #     sample = stable_viton_model_hd2(
+    #         batch,
+    #         n_steps,
+    #     )
+    # return sample
 
 
 example_path = opj(os.path.dirname(__file__), 'examples_eternal')
