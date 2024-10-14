@@ -51,7 +51,7 @@ params = config.model.params
 # sampler = PLMSSampler(model)
 
 model2 = create_model(config_path=None, config=config)
-model2.load_state_dict(torch.load("./checkpoints/VITONHD_1024.ckpt", map_location="cpu")["state_dict"])
+model2.load_state_dict(torch.load("./checkpoints/VITONHD_1024.ckpt", map_location="cuda:0")["state_dict"])
 model2 = model2.cuda()
 model2.eval()
 sampler2 = PLMSSampler(model2)
@@ -184,17 +184,14 @@ def process_hd(vton_img, garm_img, n_steps, is_custom):
         IMG_W
     )
     
-    # if is_custom:
-    #     sample = stable_viton_model_hd(
-    #         batch,
-    #         n_steps,
-    #     )
-    # else:
-    #     sample = stable_viton_model_hd2(
-    #         batch,
-    #         n_steps,
-    #     )
-    # return sample
+    sample = stable_viton_model_hd2(
+        batch,
+        n_steps,
+    )
+    
+    sample.save('output.png', 'PNG')
+    
+    return sample
 
 
 example_path = opj(os.path.dirname(__file__), 'examples_eternal')
@@ -255,4 +252,4 @@ with gr.Blocks(css='style.css') as demo:
     ips = [vton_img, garm_img, n_steps, is_custom]
     run_button.click(fn=process_hd, inputs=ips, outputs=[result_gallery])
 
-demo.queue().launch()
+demo.queue().launch(share=True)
