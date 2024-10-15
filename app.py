@@ -199,32 +199,6 @@ example_model_ps = sorted(glob(opj(example_path, "model/*")))
 example_garment_ps = sorted(glob(opj(example_path, "garment/*")))
 
 with gr.Blocks(css='style.css') as demo:
-    gr.HTML(
-        """
-        <div style="display: flex; justify-content: center; align-items: center; text-align: center;">
-            <div>
-                <h1>Rdy2Wr.AI StableVITON Demo 👕👔👗</h1>
-                <div style="display: flex; justify-content: center; align-items: center; text-align: center;">
-                    <a href='https://arxiv.org/abs/2312.01725'>
-                        <img src="https://img.shields.io/badge/arXiv-2312.01725-red">
-                    </a>
-                    &nbsp;
-                    <a href='https://rlawjdghek.github.io/StableVITON/'>
-                        <img src='https://img.shields.io/badge/page-github.io-blue.svg'>
-                    </a>
-                    &nbsp;
-                    <a href='https://github.com/rlawjdghek/StableVITON'>
-                        <img src='https://img.shields.io/github/stars/rlawjdghek/StableVITON'>
-                    </a>
-                    &nbsp;
-                    <a href='https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode'>
-                        <img src='https://img.shields.io/badge/license-CC_BY--NC--SA_4.0-lightgrey'>
-                    </a>
-                </div>
-            </div>
-        </div>
-        """
-    )
     with gr.Row():
         gr.Markdown("## Experience virtual try-on with your own images!")
     with gr.Row():
@@ -246,10 +220,13 @@ with gr.Blocks(css='style.css') as demo:
     with gr.Column():
         run_button = gr.Button(value="Run")
         n_steps = gr.Slider(label="Steps", minimum=10, maximum=50, value=20, step=1)
-        is_custom = gr.Checkbox(label="customized model")
         # seed = gr.Slider(label="Seed", minimum=-1, maximum=2147483647, step=1, value=-1)
 
     ips = [vton_img, garm_img, n_steps, is_custom]
     run_button.click(fn=process_hd, inputs=ips, outputs=[result_gallery])
+
+    with gr.Row():
+        gr.Markdown("Credit: StableVITON by rlawjdghek")
+
 
 demo.queue().launch(share=True)
