@@ -1,0 +1,34 @@
+services:
+  smplitex:
+    image: sinasinapy/smplitex:latest
+    stdin_open: true # docker run -i
+    tty: true # docker run -t
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+  pytorch3d:
+    image: sinasinapy/pytorch3d:latest
+    stdin_open: true # docker run -i
+    tty: true # docker run -t
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+  stableviton:
+    image: sinasinapy/stableviton:latest
+    stdin_open: true # docker run -i
+    tty: true # docker run -t
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]

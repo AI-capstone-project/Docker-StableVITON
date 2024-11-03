@@ -22,7 +22,7 @@ from cldm.plms_hacked import PLMSSampler
 from utils_stableviton import get_mask_location, get_batch, tensor2img, center_crop
 
 PROJECT_ROOT = Path(__file__).absolute().parents[1].absolute()
-sys.path.insert(0, str(PROJECT_ROOT)) 
+sys.path.insert(0, str(PROJECT_ROOT))
 
 IMG_H = 1024
 IMG_W = 768
@@ -87,10 +87,10 @@ sampler2 = PLMSSampler(model2)
 #         bs,
 #         (4, IMG_H//8, IMG_W//8),
 #         cond,
-#         x_T=start_code, 
+#         x_T=start_code,
 #         verbose=False,
 #         eta=0.0,
-#         unconditional_conditioning=uc_full,       
+#         unconditional_conditioning=uc_full,
 #     )
 
 #     output = model.decode_first_stage(output)
@@ -124,24 +124,24 @@ def stable_viton_model_hd2(
     start_code = model2.q_sample(z, ts)
     torch.cuda.empty_cache()
     output, _, _ = sampler2.sample(
-        n_steps, 
+        n_steps,
         bs,
         (4, IMG_H//8, IMG_W//8),
         cond,
-        x_T=start_code, 
+        x_T=start_code,
         verbose=False,
         eta=0.0,
-        unconditional_conditioning=uc_full,       
+        unconditional_conditioning=uc_full,
     )
 
     output = model2.decode_first_stage(output)
     output = tensor2img(output)
     pil_output = Image.fromarray(output)
     return pil_output
-    
+
 @spaces.GPU
 @torch.no_grad()
-def process_hd(vton_img, garm_img, n_steps, is_custom):
+def process_hd(vton_img, garm_img, n_steps):
     model_type = 'hd'
     category = 0  # 0:upperbody; 1:lowerbody; 2:dress
 
@@ -151,7 +151,7 @@ def process_hd(vton_img, garm_img, n_steps, is_custom):
     # vton_img = Image.open(vton_img).resize((IMG_W, IMG_H))
     garm_img = Image.open(garm_img)
     vton_img = Image.open(vton_img)
-    
+
     vton_img = center_crop(vton_img)
     garm_img = garm_img.resize((IMG_W, IMG_H))
     vton_img = vton_img.resize((IMG_W, IMG_H))
@@ -175,22 +175,22 @@ def process_hd(vton_img, garm_img, n_steps, is_custom):
     print('%.2fs' % (time.time() - stt))
 
     batch = get_batch(
-        vton_img, 
-        garm_img, 
-        densepose, 
-        masked_vton_img, 
-        mask, 
-        IMG_H, 
+        vton_img,
+        garm_img,
+        densepose,
+        masked_vton_img,
+        mask,
+        IMG_H,
         IMG_W
     )
-    
+
     sample = stable_viton_model_hd2(
         batch,
         n_steps,
     )
-    
+
     sample.save('output.png', 'PNG')
-    
+
     return sample
 
 
@@ -222,7 +222,7 @@ with gr.Blocks(css='style.css') as demo:
         n_steps = gr.Slider(label="Steps", minimum=10, maximum=50, value=20, step=1)
         # seed = gr.Slider(label="Seed", minimum=-1, maximum=2147483647, step=1, value=-1)
 
-    ips = [vton_img, garm_img, n_steps, is_custom]
+    ips = [vton_img, garm_img, n_steps]
     run_button.click(fn=process_hd, inputs=ips, outputs=[result_gallery])
 
     with gr.Row():
