@@ -1,10 +1,11 @@
 # NVIDIA CUDA
-FROM nvidia/cuda:12.4.0-devel-ubuntu22.04
+FROM ubuntu:22.04
 
 # Install Python
 RUN apt-get update && apt-get install -y \
     python3 \
-    python3-pip
+    python3-pip \
+    && rm -rf /var/lib/apt/lists/*
 
 # Set WORK DIR
 WORKDIR /StableVITON
