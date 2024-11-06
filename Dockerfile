@@ -1,5 +1,5 @@
 # NVIDIA CUDA
-FROM ubuntu:22.04
+FROM python:3.10.15-slim
 
 # Install Python
 RUN apt-get update && apt-get install -y \
