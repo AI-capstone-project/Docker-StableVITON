@@ -1,19 +1,13 @@
 services:
-  smplitex:
-    image: sinasinapy/smplitex:1.0.4
-    stdin_open: true # docker run -i
-    tty: true # docker run -t
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
   stableviton:
-    image: sinasinapy/stableviton:1.0.1
+    build: .
     stdin_open: true # docker run -i
     tty: true # docker run -t
+    develop:
+      watch:
+        - action: sync
+          path: .
+          target: /StableVITON/
     deploy:
       resources:
         reservations:
