@@ -14,7 +14,7 @@ WORKDIR /StableVITON
 COPY requirements.txt .
 
 # Install requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --default-timeout=100 --no-cache-dir -r requirements.txt
 RUN pip install spaces
 
 # necessary dependencies for opencv-python
