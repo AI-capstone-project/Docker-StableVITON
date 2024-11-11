@@ -201,11 +201,14 @@ def process_hd(vton_img, garm_img, n_steps):
 example_path = opj(os.path.dirname(__file__), 'examples_eternal')
 example_model_ps = sorted(glob(opj(example_path, "model/*")))
 example_garment_ps = sorted(glob(opj(example_path, "garment/*")))
-output_images_path = sorted(glob(opj(example_path, "model/*")))  # New path for output gallery images
 
 # New function to load images from output folder
 def load_gallery_images():
-    # Return the list of image paths from the output folder
+    # Return the list of image paths from the  output folder
+    # call smplitex:8000/    httpx / requests
+
+    # get images
+    output_images_path = sorted(glob(opj(os.path.dirname(__file__), "3d_outputs/*")))  # New path for output gallery images
     return output_images_path
 
 with gr.Blocks(css='style.css') as demo:
@@ -237,8 +240,7 @@ with gr.Blocks(css='style.css') as demo:
         # seed = gr.Slider(label="Seed", minimum=-1, maximum=2147483647, step=1, value=-1)
 
     ips = [vton_img, garm_img, n_steps]
-    load_gallery_images()
-    run_button.click(fn=process_hd, inputs=ips, outputs=[result_gallery_StableViton])
+    run_button.click(fn=load_gallery_images, outputs = [result_gallery_SMPLitex]).then(fn=process_hd, inputs=ips, outputs=[result_gallery_StableViton])
     
 
     with gr.Row():
