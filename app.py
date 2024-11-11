@@ -188,8 +188,12 @@ def process_hd(vton_img, garm_img, n_steps):
         batch,
         n_steps,
     )
+    
+    # Convert to white everything from sample that is outside of densepose
+    densepose_mask = densepose.convert("L").point(lambda x: 255 if x > 0 else 0, mode='1')
+    sample = Image.composite(sample, Image.new("RGB", sample.size, "white"), densepose_mask)
 
-    # sample.save('output.png', 'PNG')
+    sample.save('./stableviton-created_images/output.png', 'PNG')
 
     return sample
 
