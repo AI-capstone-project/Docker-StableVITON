@@ -202,6 +202,15 @@ example_path = opj(os.path.dirname(__file__), 'examples_eternal')
 example_model_ps = sorted(glob(opj(example_path, "model/*")))
 example_garment_ps = sorted(glob(opj(example_path, "garment/*")))
 
+# New function to load images from output folder
+def load_gallery_images():
+    # Return the list of image paths from the  output folder
+    # call smplitex:8000/    httpx / requests
+
+    # get images
+    output_images_path = sorted(glob(opj(os.path.dirname(__file__), "3d_outputs/*")))  # New path for output gallery images
+    return output_images_path
+
 with gr.Blocks(css='style.css') as demo:
     with gr.Row():
         gr.Markdown("## Experience virtual try-on with your own images!")
@@ -219,15 +228,20 @@ with gr.Blocks(css='style.css') as demo:
                 examples_per_page=14,
                 examples=example_garment_ps)
         with gr.Column():
-            result_gallery = gr.Image(label='Output', show_label=False, scale=1)
+            result_gallery_StableViton = gr.Image(label='Output', show_label=False, scale=1)
             # result_gallery = gr.Gallery(label='Output', show_label=False, elem_id="gallery", preview=True, scale=1)
+    with gr.Row():
+        with gr.Column():
+             # Show output images from folder as a gallery
+            result_gallery_SMPLitex = gr.Gallery(label='Output', show_label=False, elem_id="gallery", preview=True, scale=1)
     with gr.Column():
         run_button = gr.Button(value="Run")
         n_steps = gr.Slider(label="Steps", minimum=10, maximum=50, value=20, step=1)
         # seed = gr.Slider(label="Seed", minimum=-1, maximum=2147483647, step=1, value=-1)
 
     ips = [vton_img, garm_img, n_steps]
-    run_button.click(fn=process_hd, inputs=ips, outputs=[result_gallery])
+    run_button.click(fn=load_gallery_images, outputs = [result_gallery_SMPLitex]).then(fn=process_hd, inputs=ips, outputs=[result_gallery_StableViton])
+    
 
     with gr.Row():
         gr.Markdown("Credit: StableVITON by rlawjdghek")

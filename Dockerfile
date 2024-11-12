@@ -10,16 +10,16 @@ RUN apt-get update && apt-get install -y \
 # Set WORK DIR
 WORKDIR /StableVITON
 
-# Copy requirements.txt to work directory
-COPY requirements.txt .
-
-# Install requirements.txt
-RUN pip install --default-timeout=100 --no-cache-dir -r requirements.txt
 RUN pip install spaces
 
 # necessary dependencies for opencv-python
 RUN apt-get update && apt-get -y install ffmpeg \
-    libsm6 \
-    libxext6
+libsm6 \
+libxext6
+
+# Copy requirements.txt to work directory
+COPY requirements.txt .
+# Install requirements.txt
+RUN pip install --default-timeout=100 --no-cache-dir -r requirements.txt
 
 COPY . .

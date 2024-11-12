@@ -6,7 +6,7 @@ scikit-image
 opencv-python
 pillow
 diffusers==0.20.2
-transformers
+transformers==4.33.2
 xformers==0.0.20
 accelerate
 matplotlib
