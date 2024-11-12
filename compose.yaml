@@ -1,12 +1,35 @@
 services:
-  stableviton:
-    build: .
+  smplitex:
+    image: sinasinapy/smplitex:1.0.6
     stdin_open: true # docker run -i
     tty: true # docker run -t
+    volumes:
+      - smplitex:/home/myuser/SMPLitex/scripts/dummy_data/3d_outputs/
+      - stableviton:/home/myuser/SMPLitex/scripts/dummy_data/stableviton-created_images/
     develop:
       watch:
         - action: sync
-          path: .
+          path: ../Docker-SMPLitex/scripts
+          target: /home/myuser/SMPLitex/scripts
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  stableviton:
+    build: ../Docker-StableVITON
+    stdin_open: true # docker run -i
+    tty: true # docker run -t
+    volumes:
+      - stableviton:/StableVITON/stableviton-created_images/
+      - smplitex:/StableVITON/3d_outputs/
+    develop:
+      watch:
+        - action: sync
+          path: ../Docker-StableVITON/
           target: /StableVITON/
     deploy:
       resources:
@@ -15,3 +38,6 @@ services:
             - driver: nvidia
               count: all
               capabilities: [gpu]
+volumes:
+  smplitex:
+  stableviton:
