@@ -21,11 +21,14 @@ from cldm.model import create_model
 from cldm.plms_hacked import PLMSSampler
 from utils_stableviton import get_mask_location, get_batch, tensor2img, center_crop
 
+import aiohttp
+import asyncio
+
 PROJECT_ROOT = Path(__file__).absolute().parents[1].absolute()
 sys.path.insert(0, str(PROJECT_ROOT))
 
-IMG_H = 1024
-IMG_W = 768
+IMG_H = 1024//2
+IMG_W = 768//2
 
 openpose_model_hd = OpenPose(0)
 openpose_model_hd.preprocessor.body_estimation.model.to('cuda')
@@ -202,13 +205,48 @@ example_path = opj(os.path.dirname(__file__), 'examples_eternal')
 example_model_ps = sorted(glob(opj(example_path, "model/*")))
 example_garment_ps = sorted(glob(opj(example_path, "garment/*")))
 
-# New function to load images from output folder
-def load_gallery_images():
-    # Return the list of image paths from the  output folder
+async def fetch_gallery_images():
+    """
+    Asynchronous function to fetch image paths from the API.
+    """
     # call smplitex:8000/    httpx / requests
+    async with aiohttp.ClientSession() as session:
+        async with session.get("smplitex:8000/") as response:
+            if response.status == 200:
+                # Process the response to extract image paths
+                return await response.json()  # Ensure you await the response.json() call
+            else:
+                print(f"Error fetching images: {response.status}")
+                return []
+            
+async def update_gallery():
+    """
+    Asynchronous function to update the Gradio Gallery with image paths.
+    """
+    pass
+
+# New function to load images from output folder
+async def load_gallery_images():
+    """
+    Asynchronous task triggered by the button click.
+    """
+    print("Fetching images...")
+    try:
+        response = await fetch_gallery_images()
+        json_response = response.status
+        print(json_response)
+        print("Updating gallery...")
+        await update_gallery()
+        # Return the list of image paths from the  output folder
+        output_images_path = sorted(glob(opj(os.path.dirname(__file__), "3d_outputs/*")))  # New path for output gallery images
+    except aiohttp.ClientConnectionError as e:
+        print(f"Connection error: {e}")
+    except aiohttp.ClientError as e:
+        print(f"Client error: {e}")
+    except Exception as e:
+        print(f"Unexpected error: {e}")
 
     # get images
-    output_images_path = sorted(glob(opj(os.path.dirname(__file__), "3d_outputs/*")))  # New path for output gallery images
     return output_images_path
 
 with gr.Blocks(css='style.css') as demo:
