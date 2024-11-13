@@ -149,6 +149,7 @@ def stable_viton_model_hd2(
 @spaces.GPU
 @torch.no_grad()
 def process_hd(vton_img, garm_img, n_steps):
+    global ID
     model_type = 'hd'
     category = 0  # 0:upperbody; 1:lowerbody; 2:dress
 
@@ -211,6 +212,7 @@ example_model_ps = sorted(glob(opj(example_path, "model/*")))
 example_garment_ps = sorted(glob(opj(example_path, "garment/*")))
 
 async def prepare_texture():
+    global ID
     async with aiohttp.ClientSession() as session:
         async with session.get(f"http://smplitex:8000/{ID}") as response:
             if response.status == 200:
@@ -225,9 +227,10 @@ async def fetch_gallery_images(pose_id: int):
     """
     Asynchronous function to fetch image paths from the API.
     """
+    global ID
     # call smplitex:8000/    httpx / requests
     async with aiohttp.ClientSession() as session:
-        async with session.get(f"http://smplitex:8000/{ID}/{pose_id}") as response:
+        async with session.get(f"http://smplitex:8000/pose/{ID}/{pose_id}") as response:
             if response.status == 200:
                 # Process the response to extract image paths
                 return await response.json()  # Ensure you await the response.json() call
@@ -239,11 +242,19 @@ async def get_image_from_3d_outputs(pose_id: int):
     """
     Asynchronous function to update the Gradio Gallery with image paths.
     """
+    global ID
     # /3d_outputs
     output_images_path = sorted(glob(os.path.join(os.path.dirname(__file__), "3d_outputs/*")))
     target_file = next((file for file in output_images_path if f"ID-{ID-1}" in file and f"POSEID-{pose_id}" in file), None)
     img = Image.open(target_file)
     return img
+
+async def load_gallery_images1():
+    await load_gallery_images(1)
+async def load_gallery_images2():
+    await load_gallery_images(2)
+async def load_gallery_images3():
+    await load_gallery_images(3)
 
 # New function to load images from output folder
 async def load_gallery_images(pose_id: int):
@@ -309,9 +320,9 @@ with gr.Blocks(css='style.css') as demo:
              # Show output images from folder as a gallery
             result_gallery_SMPLitex = gr.Image(label='Output', show_label=False, scale=1)
     
-    posture1_button.click(fn=load_gallery_images, input=[1], outputs = [result_gallery_SMPLitex])
-    posture2_button.click(fn=load_gallery_images, input=[2], outputs = [result_gallery_SMPLitex])
-    posture3_button.click(fn=load_gallery_images, input=[3], outputs = [result_gallery_SMPLitex])
+    posture1_button.click(fn=load_gallery_images1, outputs = [result_gallery_SMPLitex])
+    posture2_button.click(fn=load_gallery_images2, outputs = [result_gallery_SMPLitex])
+    posture3_button.click(fn=load_gallery_images3, outputs = [result_gallery_SMPLitex])
 
     with gr.Row():
         gr.Markdown("Credit: StableVITON by rlawjdghek")
