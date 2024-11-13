@@ -216,13 +216,13 @@ with gr.Blocks(css='style.css') as demo:
         gr.Markdown("## Experience virtual try-on with your own images!")
     with gr.Row():
         with gr.Column():
-            vton_img = gr.Image(label="Model", type="filepath", height=384, value=example_model_ps[0])
+            vton_img = gr.Image(label="Model", type="filepath", height=384)
             example = gr.Examples(
                 inputs=vton_img,
                 examples_per_page=14,
                 examples=example_model_ps)
         with gr.Column():
-            garm_img = gr.Image(label="Garment", type="filepath", height=384, value=example_garment_ps[0])
+            garm_img = gr.Image(label="Garment", type="filepath", height=384)
             example = gr.Examples(
                 inputs=garm_img,
                 examples_per_page=14,
@@ -230,18 +230,28 @@ with gr.Blocks(css='style.css') as demo:
         with gr.Column():
             result_gallery_StableViton = gr.Image(label='Output', show_label=False, scale=1)
             # result_gallery = gr.Gallery(label='Output', show_label=False, elem_id="gallery", preview=True, scale=1)
-    with gr.Row():
-        with gr.Column():
-             # Show output images from folder as a gallery
-            result_gallery_SMPLitex = gr.Gallery(label='Output', show_label=False, elem_id="gallery", preview=True, scale=1)
+
     with gr.Column():
-        run_button = gr.Button(value="Run")
+        run_button = gr.Button(value="Fit Garment")
         n_steps = gr.Slider(label="Steps", minimum=10, maximum=50, value=20, step=1)
         # seed = gr.Slider(label="Seed", minimum=-1, maximum=2147483647, step=1, value=-1)
 
     ips = [vton_img, garm_img, n_steps]
-    run_button.click(fn=load_gallery_images, outputs = [result_gallery_SMPLitex]).then(fn=process_hd, inputs=ips, outputs=[result_gallery_StableViton])
+    run_button.click(fn=process_hd, inputs=ips, outputs=[result_gallery_StableViton])
     
+    with gr.Row():
+        posture1_button = gr.Button(value="Posture1")
+        posture2_button = gr.Button(value="Posture2")
+        posture3_button = gr.Button(value="Posture3")
+
+    with gr.Row():
+        with gr.Column():
+             # Show output images from folder as a gallery
+            result_gallery_SMPLitex = gr.Image(label='Output', show_label=False, scale=1)
+    
+    posture1_button.click(fn=load_gallery_images, outputs = [result_gallery_SMPLitex])
+    posture2_button.click(fn=load_gallery_images, outputs = [result_gallery_SMPLitex])
+    posture3_button.click(fn=load_gallery_images, outputs = [result_gallery_SMPLitex])
 
     with gr.Row():
         gr.Markdown("Credit: StableVITON by rlawjdghek")
