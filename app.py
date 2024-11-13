@@ -211,7 +211,7 @@ async def fetch_gallery_images():
     """
     # call smplitex:8000/    httpx / requests
     async with aiohttp.ClientSession() as session:
-        async with session.get("smplitex:8000/") as response:
+        async with session.get("http://smplitex:8000/") as response:
             if response.status == 200:
                 # Process the response to extract image paths
                 return await response.json()  # Ensure you await the response.json() call
@@ -247,8 +247,7 @@ async def load_gallery_images():
         print(f"Unexpected error: {e}")
 
     # get images
-    output_images_path = 1 # Remove this line once fully implemented
-    return output_images_path
+    return
 
 with gr.Blocks(css='style.css') as demo:
     with gr.Row():
