@@ -238,7 +238,7 @@ async def load_gallery_images():
         print("Updating gallery...")
         await update_gallery()
         # Return the list of image paths from the  output folder
-        output_images_path = sorted(glob(opj(os.path.dirname(__file__), "3d_outputs/*")))  # New path for output gallery images
+        # output_images_path = sorted(glob(opj(os.path.dirname(__file__), "3d_outputs/*")))  # New path for output gallery images
     except aiohttp.ClientConnectionError as e:
         print(f"Connection error: {e}")
     except aiohttp.ClientError as e:
@@ -247,6 +247,7 @@ async def load_gallery_images():
         print(f"Unexpected error: {e}")
 
     # get images
+    output_images_path = 1 # Remove this line once fully implemented
     return output_images_path
 
 with gr.Blocks(css='style.css') as demo:
