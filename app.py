@@ -101,6 +101,8 @@ sampler2 = PLMSSampler(model2)
 #     pil_output = Image.fromarray(output)
 #     return pil_output
 
+ID = 1
+
 @spaces.GPU
 @torch.autocast("cuda")
 @torch.no_grad()
@@ -196,7 +198,7 @@ def process_hd(vton_img, garm_img, n_steps):
     densepose_mask = densepose.convert("L").point(lambda x: 255 if x > 0 else 0, mode='1')
     sample = Image.composite(sample, Image.new("RGB", sample.size, "white"), densepose_mask)
 
-    sample.save('./stableviton-created_images/output.png', 'PNG')
+    sample.save(f"./stableviton-created_images/{ID}.png", 'PNG')
 
     return sample
 
@@ -205,13 +207,24 @@ example_path = opj(os.path.dirname(__file__), 'examples_eternal')
 example_model_ps = sorted(glob(opj(example_path, "model/*")))
 example_garment_ps = sorted(glob(opj(example_path, "garment/*")))
 
-async def fetch_gallery_images():
+async def prepare_texture():
+    async with aiohttp.ClientSession() as session:
+        async with session.get(f"http://smplitex:8000/{ID}") as response:
+            if response.status == 200:
+                ID += 1
+                return await response.json()
+            else:
+                print(f"Error fetching images: {response.status}")
+                return []
+                
+
+async def fetch_gallery_images(pose_id: int):
     """
     Asynchronous function to fetch image paths from the API.
     """
     # call smplitex:8000/    httpx / requests
     async with aiohttp.ClientSession() as session:
-        async with session.get("http://smplitex:8000/") as response:
+        async with session.get(f"http://smplitex:8000/{ID}/{pose_id}") as response:
             if response.status == 200:
                 # Process the response to extract image paths
                 return await response.json()  # Ensure you await the response.json() call
@@ -219,24 +232,30 @@ async def fetch_gallery_images():
                 print(f"Error fetching images: {response.status}")
                 return []
             
-async def update_gallery():
+async def get_image_from_3d_outputs(pose_id: int):
     """
     Asynchronous function to update the Gradio Gallery with image paths.
     """
-    pass
+    # /3d_outputs
+    output_images_path = sorted(glob(os.path.join(os.path.dirname(__file__), "3d_outputs/*")))
+    target_file = next((file for file in output_images_path if f"ID-{ID-1}" in file and f"POSEID-{pose_id}" in file), None)
+    img = Image.open(target_file)
+    return img
 
 # New function to load images from output folder
-async def load_gallery_images():
+async def load_gallery_images(pose_id: int):
     """
     Asynchronous task triggered by the button click.
     """
     print("Fetching images...")
     try:
-        response = await fetch_gallery_images()
+        response = await fetch_gallery_images(pose_id)
         json_response = response.status
         print(json_response)
         print("Updating gallery...")
-        await update_gallery()
+        image = get_image_from_3d_outputs(pose_id)
+        
+        return image
         # Return the list of image paths from the  output folder
         # output_images_path = sorted(glob(opj(os.path.dirname(__file__), "3d_outputs/*")))  # New path for output gallery images
     except aiohttp.ClientConnectionError as e:
@@ -275,7 +294,7 @@ with gr.Blocks(css='style.css') as demo:
         # seed = gr.Slider(label="Seed", minimum=-1, maximum=2147483647, step=1, value=-1)
 
     ips = [vton_img, garm_img, n_steps]
-    run_button.click(fn=process_hd, inputs=ips, outputs=[result_gallery_StableViton])
+    run_button.click(fn=process_hd, inputs=ips, outputs=[result_gallery_StableViton]).then(fn=prepare_texture)
     
     with gr.Row():
         posture1_button = gr.Button(value="Posture1")
@@ -287,9 +306,9 @@ with gr.Blocks(css='style.css') as demo:
              # Show output images from folder as a gallery
             result_gallery_SMPLitex = gr.Image(label='Output', show_label=False, scale=1)
     
-    posture1_button.click(fn=load_gallery_images, outputs = [result_gallery_SMPLitex])
-    posture2_button.click(fn=load_gallery_images, outputs = [result_gallery_SMPLitex])
-    posture3_button.click(fn=load_gallery_images, outputs = [result_gallery_SMPLitex])
+    posture1_button.click(fn=load_gallery_images, input=[1], outputs = [result_gallery_SMPLitex])
+    posture2_button.click(fn=load_gallery_images, input=[2], outputs = [result_gallery_SMPLitex])
+    posture3_button.click(fn=load_gallery_images, input=[3], outputs = [result_gallery_SMPLitex])
 
     with gr.Row():
         gr.Markdown("Credit: StableVITON by rlawjdghek")
