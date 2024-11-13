@@ -202,7 +202,6 @@ def process_hd(vton_img, garm_img, n_steps):
     sample = Image.composite(sample, Image.new("RGB", sample.size, "white"), densepose_mask)
 
     sample.save(f"./stableviton-created_images/ID-{ID}.png", 'PNG')
-    ID += 1
 
     return sample
 
@@ -246,15 +245,16 @@ async def get_image_from_3d_outputs(pose_id: int):
     # /3d_outputs
     output_images_path = sorted(glob(os.path.join(os.path.dirname(__file__), "3d_outputs/*")))
     target_file = next((file for file in output_images_path if f"ID-{ID-1}" in file and f"POSEID-{pose_id}" in file), None)
-    img = Image.open(target_file)
-    return img
+    print(f"{target_file=} {ID=} {pose_id=}")
+    
+    return target_file
 
 async def load_gallery_images1():
-    await load_gallery_images(1)
+    return await load_gallery_images(1)
 async def load_gallery_images2():
-    await load_gallery_images(2)
+    return await load_gallery_images(2)
 async def load_gallery_images3():
-    await load_gallery_images(3)
+    return await load_gallery_images(3)
 
 # New function to load images from output folder
 async def load_gallery_images(pose_id: int):
@@ -264,11 +264,10 @@ async def load_gallery_images(pose_id: int):
     print("Fetching images...")
     try:
         response = await fetch_gallery_images(pose_id)
-        json_response = response.status
-        print(json_response)
+
         print("Updating gallery...")
-        image = get_image_from_3d_outputs(pose_id)
-        
+        image = await get_image_from_3d_outputs(pose_id)
+        print(f"{image=}")
         return image
         # Return the list of image paths from the  output folder
         # output_images_path = sorted(glob(opj(os.path.dirname(__file__), "3d_outputs/*")))  # New path for output gallery images
@@ -280,6 +279,7 @@ async def load_gallery_images(pose_id: int):
         print(f"Unexpected error: {e}")
 
     # get images
+    print('returning nothing')
     return
 
 with gr.Blocks(css='style.css') as demo:
@@ -318,7 +318,7 @@ with gr.Blocks(css='style.css') as demo:
     with gr.Row():
         with gr.Column():
              # Show output images from folder as a gallery
-            result_gallery_SMPLitex = gr.Image(label='Output', show_label=False, scale=1)
+            result_gallery_SMPLitex = gr.Image(label="smplitex", type="filepath", scale=1)
     
     posture1_button.click(fn=load_gallery_images1, outputs = [result_gallery_SMPLitex])
     posture2_button.click(fn=load_gallery_images2, outputs = [result_gallery_SMPLitex])
