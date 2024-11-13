@@ -30,6 +30,8 @@ sys.path.insert(0, str(PROJECT_ROOT))
 IMG_H = 1024//2
 IMG_W = 768//2
 
+ID = 1
+
 openpose_model_hd = OpenPose(0)
 openpose_model_hd.preprocessor.body_estimation.model.to('cuda')
 parsing_model_hd = Parsing(0)
@@ -198,7 +200,8 @@ def process_hd(vton_img, garm_img, n_steps):
     densepose_mask = densepose.convert("L").point(lambda x: 255 if x > 0 else 0, mode='1')
     sample = Image.composite(sample, Image.new("RGB", sample.size, "white"), densepose_mask)
 
-    sample.save(f"./stableviton-created_images/{ID}.png", 'PNG')
+    sample.save(f"./stableviton-created_images/ID-{ID}.png", 'PNG')
+    ID += 1
 
     return sample
 
