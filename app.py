@@ -224,6 +224,7 @@ async def prepare_texture():
                 
 
 async def fetch_gallery_images(pose_id: int):
+    global ID 
     """
     Asynchronous function to fetch image paths from the API.
     """
@@ -284,41 +285,47 @@ async def load_gallery_images(pose_id: int):
 
 with gr.Blocks(css='style.css') as demo:
     with gr.Row():
-        gr.Markdown("## Experience virtual try-on with your own images!")
+        gr.Markdown("## Virtual Try-On: Experience change with your own images!")
     with gr.Row():
         with gr.Column():
-            vton_img = gr.Image(label="Model", type="filepath", height=384)
+            gr.Markdown("## Please add an image of a person or pick from an example as the Model for the try-on")
+            vton_img = gr.Image(label="Model",show_label=False, type="filepath", height=384)
             example = gr.Examples(
                 inputs=vton_img,
                 examples_per_page=14,
                 examples=example_model_ps)
         with gr.Column():
-            garm_img = gr.Image(label="Garment", type="filepath", height=384)
+            gr.Markdown("## Please add an image of a piece of clothing or pick from an example as the Garment for the try-on")
+            garm_img = gr.Image(label="Garment",show_label=False, type="filepath", height=384)
             example = gr.Examples(
                 inputs=garm_img,
                 examples_per_page=14,
                 examples=example_garment_ps)
         with gr.Column():
+            gr.Markdown("## Results: Adjust the steps and press the Fit Garment Button to get ur results")
             result_gallery_StableViton = gr.Image(label='Output', show_label=False, scale=1)
             # result_gallery = gr.Gallery(label='Output', show_label=False, elem_id="gallery", preview=True, scale=1)
 
     with gr.Column():
         run_button = gr.Button(value="Fit Garment")
-        n_steps = gr.Slider(label="Steps", minimum=10, maximum=50, value=20, step=1)
+        n_steps = gr.Slider(label="Steps (Note: Higher Steps would have better results but would have a longer process time)", minimum=10, maximum=50, value=20, step=1)
         # seed = gr.Slider(label="Seed", minimum=-1, maximum=2147483647, step=1, value=-1)
 
     ips = [vton_img, garm_img, n_steps]
     run_button.click(fn=process_hd, inputs=ips, outputs=[result_gallery_StableViton]).then(fn=prepare_texture)
     
-    with gr.Row():
-        posture1_button = gr.Button(value="Posture1")
-        posture2_button = gr.Button(value="Posture2")
-        posture3_button = gr.Button(value="Posture3")
 
-    with gr.Row():
-        with gr.Column():
-             # Show output images from folder as a gallery
-            result_gallery_SMPLitex = gr.Image(label='Output', show_label=False, scale=1)
+
+    with gr.Column():
+        gr.Markdown("## Please choose one of the postures to show your 3d Avatar")
+        with gr.Row():
+            posture1_button = gr.Button(value="Posture1")
+            posture2_button = gr.Button(value="Posture2")
+            posture3_button = gr.Button(value="Posture3")
+
+    with gr.Column():
+            # Show output images from folder as a gallery
+        result_gallery_SMPLitex = gr.Image(label='Output', show_label=False, scale=1)
     
     posture1_button.click(fn=load_gallery_images1, outputs = [result_gallery_SMPLitex])
     posture2_button.click(fn=load_gallery_images2, outputs = [result_gallery_SMPLitex])
