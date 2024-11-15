@@ -21,11 +21,16 @@ from cldm.model import create_model
 from cldm.plms_hacked import PLMSSampler
 from utils_stableviton import get_mask_location, get_batch, tensor2img, center_crop
 
+import aiohttp
+import asyncio
+
 PROJECT_ROOT = Path(__file__).absolute().parents[1].absolute()
 sys.path.insert(0, str(PROJECT_ROOT))
 
-IMG_H = 1024
-IMG_W = 768
+IMG_H = 1024//2
+IMG_W = 768//2
+
+ID = 1
 
 openpose_model_hd = OpenPose(0)
 openpose_model_hd.preprocessor.body_estimation.model.to('cuda')
@@ -98,6 +103,8 @@ sampler2 = PLMSSampler(model2)
 #     pil_output = Image.fromarray(output)
 #     return pil_output
 
+ID = 1
+
 @spaces.GPU
 @torch.autocast("cuda")
 @torch.no_grad()
@@ -142,6 +149,7 @@ def stable_viton_model_hd2(
 @spaces.GPU
 @torch.no_grad()
 def process_hd(vton_img, garm_img, n_steps):
+    global ID
     model_type = 'hd'
     category = 0  # 0:upperbody; 1:lowerbody; 2:dress
 
@@ -193,7 +201,7 @@ def process_hd(vton_img, garm_img, n_steps):
     densepose_mask = densepose.convert("L").point(lambda x: 255 if x > 0 else 0, mode='1')
     sample = Image.composite(sample, Image.new("RGB", sample.size, "white"), densepose_mask)
 
-    sample.save('./stableviton-created_images/output.png', 'PNG')
+    sample.save(f"./stableviton-created_images/ID-{ID}.png", 'PNG')
 
     return sample
 
@@ -202,27 +210,90 @@ example_path = opj(os.path.dirname(__file__), 'examples_eternal')
 example_model_ps = sorted(glob(opj(example_path, "model/*")))
 example_garment_ps = sorted(glob(opj(example_path, "garment/*")))
 
-# New function to load images from output folder
-def load_gallery_images():
-    # Return the list of image paths from the  output folder
+async def prepare_texture():
+    global ID
+    async with aiohttp.ClientSession() as session:
+        async with session.get(f"http://smplitex:8000/{ID}") as response:
+            if response.status == 200:
+                ID += 1
+                return await response.json()
+            else:
+                print(f"Error fetching images: {response.status}")
+                return []
+                
+
+async def fetch_gallery_images(pose_id: int):
+    """
+    Asynchronous function to fetch image paths from the API.
+    """
+    global ID
     # call smplitex:8000/    httpx / requests
+    async with aiohttp.ClientSession() as session:
+        async with session.get(f"http://smplitex:8000/pose/{ID}/{pose_id}") as response:
+            if response.status == 200:
+                # Process the response to extract image paths
+                return await response.json()  # Ensure you await the response.json() call
+            else:
+                print(f"Error fetching images: {response.status}")
+                return []
+            
+async def get_image_from_3d_outputs(pose_id: int):
+    """
+    Asynchronous function to update the Gradio Gallery with image paths.
+    """
+    global ID
+    # /3d_outputs
+    output_images_path = sorted(glob(os.path.join(os.path.dirname(__file__), "3d_outputs/*")))
+    target_file = next((file for file in output_images_path if f"ID-{ID-1}" in file and f"POSEID-{pose_id}" in file), None)
+    print(f"{target_file=} {ID=} {pose_id=}")
+    
+    return target_file
+
+async def load_gallery_images1():
+    return await load_gallery_images(1)
+async def load_gallery_images2():
+    return await load_gallery_images(2)
+async def load_gallery_images3():
+    return await load_gallery_images(3)
+
+# New function to load images from output folder
+async def load_gallery_images(pose_id: int):
+    """
+    Asynchronous task triggered by the button click.
+    """
+    print("Fetching images...")
+    try:
+        response = await fetch_gallery_images(pose_id)
+
+        print("Updating gallery...")
+        image = await get_image_from_3d_outputs(pose_id)
+        print(f"{image=}")
+        return image
+        # Return the list of image paths from the  output folder
+        # output_images_path = sorted(glob(opj(os.path.dirname(__file__), "3d_outputs/*")))  # New path for output gallery images
+    except aiohttp.ClientConnectionError as e:
+        print(f"Connection error: {e}")
+    except aiohttp.ClientError as e:
+        print(f"Client error: {e}")
+    except Exception as e:
+        print(f"Unexpected error: {e}")
 
     # get images
-    output_images_path = sorted(glob(opj(os.path.dirname(__file__), "3d_outputs/*")))  # New path for output gallery images
-    return output_images_path
+    print('returning nothing')
+    return
 
 with gr.Blocks(css='style.css') as demo:
     with gr.Row():
         gr.Markdown("## Experience virtual try-on with your own images!")
     with gr.Row():
         with gr.Column():
-            vton_img = gr.Image(label="Model", type="filepath", height=384, value=example_model_ps[0])
+            vton_img = gr.Image(label="Model", type="filepath", height=384)
             example = gr.Examples(
                 inputs=vton_img,
                 examples_per_page=14,
                 examples=example_model_ps)
         with gr.Column():
-            garm_img = gr.Image(label="Garment", type="filepath", height=384, value=example_garment_ps[0])
+            garm_img = gr.Image(label="Garment", type="filepath", height=384)
             example = gr.Examples(
                 inputs=garm_img,
                 examples_per_page=14,
@@ -230,18 +301,28 @@ with gr.Blocks(css='style.css') as demo:
         with gr.Column():
             result_gallery_StableViton = gr.Image(label='Output', show_label=False, scale=1)
             # result_gallery = gr.Gallery(label='Output', show_label=False, elem_id="gallery", preview=True, scale=1)
-    with gr.Row():
-        with gr.Column():
-             # Show output images from folder as a gallery
-            result_gallery_SMPLitex = gr.Gallery(label='Output', show_label=False, elem_id="gallery", preview=True, scale=1)
+
     with gr.Column():
-        run_button = gr.Button(value="Run")
+        run_button = gr.Button(value="Fit Garment")
         n_steps = gr.Slider(label="Steps", minimum=10, maximum=50, value=20, step=1)
         # seed = gr.Slider(label="Seed", minimum=-1, maximum=2147483647, step=1, value=-1)
 
     ips = [vton_img, garm_img, n_steps]
-    run_button.click(fn=load_gallery_images, outputs = [result_gallery_SMPLitex]).then(fn=process_hd, inputs=ips, outputs=[result_gallery_StableViton])
+    run_button.click(fn=process_hd, inputs=ips, outputs=[result_gallery_StableViton]).then(fn=prepare_texture)
     
+    with gr.Row():
+        posture1_button = gr.Button(value="Posture1")
+        posture2_button = gr.Button(value="Posture2")
+        posture3_button = gr.Button(value="Posture3")
+
+    with gr.Row():
+        with gr.Column():
+             # Show output images from folder as a gallery
+            result_gallery_SMPLitex = gr.Image(label="smplitex", type="filepath", scale=1)
+    
+    posture1_button.click(fn=load_gallery_images1, outputs = [result_gallery_SMPLitex])
+    posture2_button.click(fn=load_gallery_images2, outputs = [result_gallery_SMPLitex])
+    posture3_button.click(fn=load_gallery_images3, outputs = [result_gallery_SMPLitex])
 
     with gr.Row():
         gr.Markdown("Credit: StableVITON by rlawjdghek")
